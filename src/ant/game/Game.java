@@ -4,6 +4,8 @@ import ant.GameEventHandler;
 import ant.data.GameLog;
 import ant.data.TestData;
 
+import java.util.Random;
+
 public class Game {
 
 	private GameBoard gameBoard;
@@ -38,14 +40,14 @@ public class Game {
 	public Game(String name, GameEventHandler eventHandler, int N, int m, TestData testData) {
 		this(name,N,m,1,2*N,-1,testData,eventHandler);
 		setupGameBoard(0,1,-(N+2),N);
-		setupAnt(m,m);
+		setupAntRandomSP();
 		startGame();
 	}
 
 	public Game(String name, GameEventHandler eventHandler, TestData testData) {
 		this(name,10,2,1,2*10,-1,testData,eventHandler);
 		setupGameBoard(0,1,-(N+2),N);
-		setupAnt(m,m);
+		setupAntRandomSP();
 		startGame();
 	}
 
@@ -80,6 +82,17 @@ public class Game {
 		ant = new Ant(startingX,startingY,m,this);
 	}
 
+	public void setupAntRandomSP() {
+		Random rand = new Random();
+		int startingXCandidate, startingYCandidate;
+		do {
+			startingXCandidate = rand.nextInt(N) + m;
+			startingYCandidate = rand.nextInt(N) + m;
+		} while(gameBoard.getCellPoints(new Coordinates(startingXCandidate,startingYCandidate))!=0);
+
+		setupAnt(startingXCandidate,startingYCandidate);
+	}
+
 	public void startGame() {
 		GUI = new GameGUI(this);
 	}
@@ -102,7 +115,7 @@ public class Game {
 
 	public void move(String direction) {
 		//Update TestData
-		testData.addDataSetEntry(direction,getAntView());
+		testData.addDataSetRotationEntries(direction, getAntClockwiseRotatedViews());
 
 		//Move
 		gameBoard.modifyCellOf(ant.getPosition(), passingDrop);
@@ -126,7 +139,7 @@ public class Game {
 		} else { //Out of bound
 			System.out.println("DEAD");
 			gameLog.addMoveAndScore(direction,moveScore);
-			testData.removeLastDataSetEntry();  //We do not want a deadly move in our DataSet
+			testData.removeLastDataSetEntries(4);  //We do not want deadly moves in our DataSet
 			GUI.endGame();
 		}
 	}
@@ -150,6 +163,10 @@ public class Game {
 
 	private String[] getAntView() {
 		return gameBoard.getDataRatio(getAntPosition());
+	}
+
+	private String[][] getAntClockwiseRotatedViews() {
+		return gameBoard.getDataRatioClockwiseRotations(getAntPosition());
 	}
 
 	public int getMaxMoves() {

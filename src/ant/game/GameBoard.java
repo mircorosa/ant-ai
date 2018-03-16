@@ -78,6 +78,51 @@ public class GameBoard {
 		return data;
 	}
 
+	public String[][] getDataRatioClockwiseRotations(Coordinates center) {
+
+		String[][] rotations = new String[4][((2*m+1)*(2*m+1))];
+
+		rotations[0] = getDataRatio(center);
+
+		//First rotation
+		int count1 = 0;
+		for (int j = center.y()+m; j >= center.y() - m; j--) {
+			for (int i = center.x()-m; i <= center.x()+m; i++) {
+				if(i!=center.x() || j!=center.y()) {
+
+					rotations[1][count1] = String.valueOf(getCellPoints(new Coordinates(i, j)));
+					count1++;
+				}
+			}
+		}
+
+		//Second rotation
+		int count2 = 0;
+		for (int j = center.y()+m; j >= center.y() - m; j--) {
+			for (int i = center.x()+m; i >= center.x()-m; i--) {
+				if(i!=center.x() || j!=center.y()) {
+
+					rotations[2][count2] = String.valueOf(getCellPoints(new Coordinates(i, j)));
+					count2++;
+				}
+			}
+		}
+
+		//Third rotation
+		int count3 = 0;
+		for (int j = center.y()-m; j <= center.y() + m; j++) {
+			for (int i = center.x()+m; i >= center.x()-m; i--) {
+				if(i!=center.x() || j!=center.y()) {
+
+					rotations[3][count3] = String.valueOf(getCellPoints(new Coordinates(i, j)));
+					count3++;
+				}
+			}
+		}
+
+		return rotations;
+	}
+
 	int[][] getBoard() {
 		return board;
 	}

@@ -7,49 +7,46 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Helper class for .arff files generation.
+ * @author Mirco Rosa
+ */
 public abstract class DataSet {
 
-	String name = "";
-	String fileName = "";
-	String path = "";
-	HashMap<String,ArrayList<Object>> model = new HashMap<>();
-	ArrayList<ArrayList<Object>> data = new ArrayList<>();
+	protected String name;
 
-	public DataSet(String name, String fileName, String path) {
+	protected ArrayList<Attribute> model = new ArrayList<>();
+	protected ArrayList<ArrayList<Object>> data = new ArrayList<>();
+
+	public DataSet(String name) {
 		this.name = name;
-		this.fileName = fileName;
-		this.path = path;
 	}
 
-	abstract protected void initializeStructure();
-
-	abstract protected void generateDataSet();
-
-	void addAttribute(String name, Object ... values) {
-		model.put(name,new ArrayList<>(Arrays.asList(values)));
+	public void addAttribute(String name, Object ... values) {
+		model.add(new Attribute(name,new ArrayList<>(Arrays.asList(values))));
 	}
 
-	void addEntry(Object ... values) {
+	public void addEntry(Object ... values) {
 		if(values.length>0)
 			data.add(new ArrayList<>((Arrays.asList(values))));
 	}
 
-	void printToFile() throws FileNotFoundException {
+	public void printToFile(String path, String fileName) throws FileNotFoundException {
 		PrintWriter arff = new PrintWriter(path+fileName+".arff");
 
 		arff.println("@RELATION "+name);
 		arff.println();
 
 		//Definition Section
-		for(Map.Entry<String,ArrayList<Object>> entry : model.entrySet()) {
-			arff.print("@ATTRIBUTE "+entry.getKey()+" ");
-			if(entry.getValue().isEmpty())
+		for(Attribute attribute : model) {
+			arff.print("@ATTRIBUTE "+attribute.getName()+" ");
+			if(attribute.getValues().isEmpty())
 				arff.println();
-			else if(entry.getValue().size()==1)
-				arff.println(entry.getValue().get(0));
+			else if(attribute.getValues().size()==1)
+				arff.println(attribute.getValues().get(0));
 			else {
 				StringBuilder values = new StringBuilder("{");
-				for(Object obj : entry.getValue())
+				for(Object obj : attribute.getValues())
 					values.append(obj).append(",");
 				values.deleteCharAt(values.length()-1).append("}");
 				arff.println(values.toString());
@@ -73,6 +70,32 @@ public abstract class DataSet {
 			arff.println("% No data available");
 
 		arff.close();
+	}
+
+	private class Attribute {
+		private String name;
+		private ArrayList<Object> values;
+
+		public Attribute(String name, ArrayList<Object> values) {
+			this.name = name;
+			this.values = values;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public ArrayList<Object> getValues() {
+			return values;
+		}
+
+		public void setValues(ArrayList<Object> values) {
+			this.values = values;
+		}
 	}
 
 }

@@ -4,8 +4,10 @@ import ant.data.AntDataSet;
 import ant.data.CompleteLog;
 import ant.data.TestData;
 import ant.game.Game;
+import ant.game.PathsGUI;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -30,7 +32,7 @@ public class Launcher extends Application {
 	private Scene mainMenuScene;
 	private BorderPane main;
 	private Text title;
-	private VBox trainingPane;
+	private VBox mainMenuPane;
 	private Text boardSizeText;
 	private Slider sizeSlider;
 	private Separator separator1;
@@ -41,6 +43,9 @@ public class Launcher extends Application {
 	private Slider gameNumberSlider;
 	private Separator separator3;
 	private Button trainingButton;
+
+	private Separator separator4;
+	private Button treeTestButton;
 
 	private Scene trainingScene;
 	private BorderPane training;
@@ -66,7 +71,7 @@ public class Launcher extends Application {
 	public Launcher() {
 		main = new BorderPane();
 		title = new Text("The Ant Game");
-		trainingPane = new VBox();
+		mainMenuPane = new VBox();
 		boardSizeText = new Text("Board Size");
 		sizeSlider = new Slider();
 		separator1 = new Separator();
@@ -77,6 +82,8 @@ public class Launcher extends Application {
 		gameNumberSlider = new Slider();
 		separator3 = new Separator();
 		trainingButton = new Button("Start Training");
+		separator4 = new Separator();
+		treeTestButton = new Button("Start Tree Test");
 	}
 
 	@Override
@@ -86,7 +93,7 @@ public class Launcher extends Application {
 		this.primaryStage=primaryStage;
 
 		primaryStage.setTitle("Ant Game");
-		mainMenuScene=new Scene(main,300,350);
+		mainMenuScene=new Scene(main,300,400);
 		primaryStage.setScene(mainMenuScene);
 		primaryStage.show();
 	}
@@ -100,12 +107,12 @@ public class Launcher extends Application {
 		BorderPane.setMargin(title,new Insets(15));
 
 
-		trainingPane.setPadding(new Insets(10));
-		trainingPane.setSpacing(7);
-		trainingPane.setAlignment(Pos.CENTER);
+		mainMenuPane.setPadding(new Insets(10));
+		mainMenuPane.setSpacing(7);
+		mainMenuPane.setAlignment(Pos.CENTER);
 
 		boardSizeText.setTextAlignment(TextAlignment.CENTER);
-		trainingPane.getChildren().add(boardSizeText);
+		mainMenuPane.getChildren().add(boardSizeText);
 
 		sizeSlider.setMin(10);
 		sizeSlider.setMax(50);
@@ -117,13 +124,13 @@ public class Launcher extends Application {
 		sizeSlider.setMajorTickUnit(10);
 		sizeSlider.setBlockIncrement(1);
 		sizeSlider.valueProperty().addListener((observable, oldValue, newValue) -> boardSizeText.setText("Board Size: "+newValue.intValue()));
-		trainingPane.getChildren().add(sizeSlider);
+		mainMenuPane.getChildren().add(sizeSlider);
 
 		separator1.setOrientation(Orientation.HORIZONTAL);
-		trainingPane.getChildren().add(separator1);
+		mainMenuPane.getChildren().add(separator1);
 
 		antRangeText.setTextAlignment(TextAlignment.CENTER);
-		trainingPane.getChildren().add(antRangeText);
+		mainMenuPane.getChildren().add(antRangeText);
 
 		rangeSlider.setMin(1);
 		rangeSlider.setMax(5);
@@ -135,13 +142,13 @@ public class Launcher extends Application {
 		rangeSlider.setMajorTickUnit(1);
 		rangeSlider.setBlockIncrement(1);
 		rangeSlider.valueProperty().addListener((observable, oldValue, newValue) -> antRangeText.setText("Ant Range: "+newValue.intValue()));
-		trainingPane.getChildren().add(rangeSlider);
+		mainMenuPane.getChildren().add(rangeSlider);
 
 		separator2.setOrientation(Orientation.HORIZONTAL);
-		trainingPane.getChildren().add(separator2);
+		mainMenuPane.getChildren().add(separator2);
 
 		gameNumberText.setTextAlignment(TextAlignment.CENTER);
-		trainingPane.getChildren().add(gameNumberText);
+		mainMenuPane.getChildren().add(gameNumberText);
 
 		gameNumberSlider.setMin(1);
 		gameNumberSlider.setMax(15);
@@ -153,10 +160,10 @@ public class Launcher extends Application {
 		gameNumberSlider.setMajorTickUnit(3);
 		gameNumberSlider.setBlockIncrement(1);
 		gameNumberSlider.valueProperty().addListener((observable, oldValue, newValue) -> gameNumberText.setText("Game Number: "+newValue.intValue()));
-		trainingPane.getChildren().add(gameNumberSlider);
+		mainMenuPane.getChildren().add(gameNumberSlider);
 
 		separator3.setOrientation(Orientation.HORIZONTAL);
-		trainingPane.getChildren().add(separator3);
+		mainMenuPane.getChildren().add(separator3);
 
 		trainingButton.setAlignment(Pos.CENTER);
 		trainingButton.setMaxSize(Double.MAX_VALUE,100);
@@ -170,7 +177,7 @@ public class Launcher extends Application {
 				boardSize=(int)sizeSlider.getValue();
 				antRange=(int)rangeSlider.getValue();
 				gamesNumber=(int)gameNumberSlider.getValue();
-				testData = new TestData(new CompleteLog(),new AntDataSet(DATA_SET_NAME, FILE_NAME, PATH,antRange));
+				testData = new TestData(new CompleteLog(),new AntDataSet(DATA_SET_NAME,antRange),PATH,FILE_NAME);
 				setupTrainingGUI();
 				updateTrainingProgress(0,gamesNumber,0,0,0,0);
 				new Game("Game "+gameCount, this, boardSize,antRange,testData);
@@ -187,8 +194,20 @@ public class Launcher extends Application {
 				}
 			}
 		});
-		trainingPane.getChildren().add(trainingButton);
-		main.setCenter(trainingPane);
+		mainMenuPane.getChildren().add(trainingButton);
+
+		separator4.setOrientation(Orientation.HORIZONTAL);
+		separator4.setMinHeight(15);
+		mainMenuPane.getChildren().add(separator4);
+
+		treeTestButton.setAlignment(Pos.CENTER);
+		treeTestButton.setMaxSize(Double.MAX_VALUE,100);
+
+
+		mainMenuPane.getChildren().add(treeTestButton);
+
+
+		main.setCenter(mainMenuPane);
 	}
 
 
@@ -238,6 +257,13 @@ public class Launcher extends Application {
 		trainingData.add(vBoxes[6],2,2);
 		pathsButton=new Button("Show Paths Map");
 		pathsButton.setMaxSize(Double.MAX_VALUE,100);
+		pathsButton.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+//				new PathsGUI(new TestData());
+
+			}
+		});
 		//TODO Add behaviour
 		trainingData.add(pathsButton,0,3,3,1);
 

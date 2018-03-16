@@ -4,24 +4,19 @@ public class AntDataSet extends DataSet {
 
 	int m;
 
-	public AntDataSet(String name, String fileName, String path, int m) {
-		super(name, fileName, path);
+	public AntDataSet(String name, int m) {
+		super(name);
 		this.m=m;
 		initializeStructure();
 	}
 
-	@Override
-	protected void initializeStructure() {
+	private void initializeStructure() {
 		//Naming convention: nrow-ncol
 		for (int i = 0; i < m * 2 + 1; i++)
 			for (int j = 0; j < m * 2 + 1; j++)
-				addAttribute(i+"-"+j,"REAL");
+				if(i!=m || j!=m)
+					addAttribute(i+"-"+j,"REAL");
 		addAttribute("Direction","N","S","E","W");
-	}
-
-	@Override
-	protected void generateDataSet() {
-		//Nothing here, entries added incrementally
 	}
 
 	public void removeLastEntry() {

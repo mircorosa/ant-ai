@@ -6,13 +6,16 @@ public class TestData {
 
 	private CompleteLog completeLog;
 	private AntDataSet dataSet;
+	private String path, fileName;
 
 	public TestData() {
 	}
 
-	public TestData(CompleteLog completeLog, AntDataSet dataSet) {
+	public TestData(CompleteLog completeLog, AntDataSet dataSet, String path, String fileName) {
 		this.completeLog = completeLog;
 		this.dataSet = dataSet;
+		this.path=path;
+		this.fileName=fileName;
 	}
 
 	public CompleteLog getCompleteLog() {
@@ -25,7 +28,16 @@ public class TestData {
 
 	public void addDataSetEntry(String direction, String... values) {
 		values[values.length-1]=direction;
-		dataSet.addEntry(values);
+		dataSet.addEntry((Object) values);
+	}
+
+	public void addDataSetRotationEntries(String direction, String[]... values) {
+		String directions = "NWSE";
+
+		for (int i = 0; i < values.length; i++) {
+			values[i][values[i].length-1]= String.valueOf(directions.charAt((directions.indexOf(direction)+i)%directions.length()));
+			dataSet.addEntry((Object[]) values[i]);
+		}
 	}
 
 	public void addGameLog(GameLog gameLog) {
@@ -34,14 +46,16 @@ public class TestData {
 
 	public void generateArff() {
 		try {
-			dataSet.printToFile();
+			dataSet.printToFile(path,fileName);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
 
-	public void removeLastDataSetEntry() {
-		dataSet.removeLastEntry();
+	public void removeLastDataSetEntries(int number) {
+		for (int i = 0; i < number; i++) {
+			dataSet.removeLastEntry();
+		}
 	}
 
 	public int countMoves() {

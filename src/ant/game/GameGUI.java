@@ -102,6 +102,7 @@ public class GameGUI extends GridPane {
 		statusBar.getChildren().add(endGameButton);
 
 		initializeBoard();
+		updateUI();
 
 		stage = new Stage();
 		stage.setTitle(game.getGameName());
