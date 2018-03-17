@@ -1,13 +1,13 @@
 package ant;
 
 import ant.data.AntDataSet;
-import ant.data.CompleteLog;
-import ant.data.TestData;
+import ant.data.BoardsHistory;
+import ant.data.FullLog;
+import ant.data.GamesData;
 import ant.game.Game;
-import ant.game.PathsGUI;
+import ant.paths.Paths;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -48,8 +48,8 @@ public class Launcher extends Application {
 	private Button treeTestButton;
 
 	private Scene trainingScene;
-	private BorderPane training;
-	private GridPane trainingData;
+	private BorderPane gamesPane;
+	private GridPane gamesDataGrid;
 	private Text gamesProgr;      //Large on top
 	private Text totalMoves;      //1st Row
 	private Text totalScore;
@@ -57,12 +57,13 @@ public class Launcher extends Application {
 	private Text deaths;          //2nd Row
 	private Text survivals;
 	private Text survivalsDeathsRatio;
-	private Button pathsButton;   //Last full row TODO Implement functionality
+	private Button pathsButton;   //Last full row
+	private Button backToMainMenuButton;
 
 
-	private ProgressBar trainingProgress;
+	private ProgressBar gamesProgress;
 
-	private TestData testData;
+	private GamesData trainingData, testData;
 
 	private static final String PATH = "/home/mirco/Desktop/";
 	private static final String FILE_NAME = "AntTrain";
@@ -83,22 +84,19 @@ public class Launcher extends Application {
 		separator3 = new Separator();
 		trainingButton = new Button("Start Training");
 		separator4 = new Separator();
-		treeTestButton = new Button("Start Tree Test");
+		treeTestButton = new Button("Start Decision Tree Test");
 	}
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
-		initializeGui();
-
 		this.primaryStage=primaryStage;
+		setupMainMenuGUI();
+		showMainMenu();
 
-		primaryStage.setTitle("Ant Game");
-		mainMenuScene=new Scene(main,300,400);
-		primaryStage.setScene(mainMenuScene);
 		primaryStage.show();
 	}
 
-	void initializeGui() {
+	private void setupMainMenuGUI() {
 		title.setFont(Font.font("Verdana",24));
 		title.setTextAlignment(TextAlignment.CENTER);
 		title.setFill(Color.FIREBRICK);
@@ -169,7 +167,7 @@ public class Launcher extends Application {
 		trainingButton.setMaxSize(Double.MAX_VALUE,100);
 		trainingButton.setOnAction(new GameEventHandler() {
 			int gameCount = 1;
-			int boardSize, antRange,gamesNumber;
+			int boardSize, antRange, gamesNumber;
 
 			@Override
 			public void handle(ActionEvent event) {
@@ -177,20 +175,20 @@ public class Launcher extends Application {
 				boardSize=(int)sizeSlider.getValue();
 				antRange=(int)rangeSlider.getValue();
 				gamesNumber=(int)gameNumberSlider.getValue();
-				testData = new TestData(new CompleteLog(),new AntDataSet(DATA_SET_NAME,antRange),PATH,FILE_NAME);
-				setupTrainingGUI();
-				updateTrainingProgress(0,gamesNumber,0,0,0,0);
-				new Game("Game "+gameCount, this, boardSize,antRange,testData);
+				trainingData = new GamesData(new FullLog(), new BoardsHistory(),new AntDataSet(DATA_SET_NAME,antRange),PATH,FILE_NAME);
+				setupGamesGUI();
+				updateGamesProgress(0,gamesNumber,0,0,0,0);
+				new Game("Game "+gameCount, this, boardSize,antRange, trainingData,SessionType.TRAINING);
 			}
 
 			@Override
-			public void pushGameData(TestData partialTestData) {
-				partialTestData.generateArff();
-				updateTrainingProgress(gameCount,gamesNumber,partialTestData.countMoves(),partialTestData.countScore(),partialTestData.countDeaths(),partialTestData.countSurvivals());
+			public void pushGameData(GamesData partialTrainingData) {
+				partialTrainingData.generateArff();
+				updateGamesProgress(gameCount,gamesNumber, partialTrainingData.countMoves(), partialTrainingData.countScore(), partialTrainingData.countDeaths(), partialTrainingData.countSurvivals());
 				gameCount++;
 				if(gameCount<=gamesNumber) {
-					testData=partialTestData;
-					new Game("Game "+gameCount, this, boardSize,antRange,partialTestData);
+					trainingData = partialTrainingData;
+					new Game("Game "+gameCount, this, boardSize,antRange, partialTrainingData,SessionType.TRAINING);
 				}
 			}
 		});
@@ -202,20 +200,56 @@ public class Launcher extends Application {
 
 		treeTestButton.setAlignment(Pos.CENTER);
 		treeTestButton.setMaxSize(Double.MAX_VALUE,100);
+		treeTestButton.setOnAction(new GameEventHandler() {
+			int gameCount;
+			int boardSize, antRange, gamesNumber;
+
+			@Override
+			public void handle(ActionEvent event) {
+				//Fires 1st game
+				gameCount = 1;
+				boardSize=(int)sizeSlider.getValue();
+				antRange=(int)rangeSlider.getValue();
+				gamesNumber=(int)gameNumberSlider.getValue();
+				if(testData==null)
+					testData = new GamesData(new FullLog(),new BoardsHistory(),new AntDataSet(DATA_SET_NAME,antRange),PATH,FILE_NAME);
+				testData.cleanDataForNewTest();
+				if(gamesPane==null)
+					setupGamesGUI();
+				updateGamesProgress(0,gamesNumber,0,0,0,0);
+				showGamesGUI();
+				new Game("Game "+gameCount, this, boardSize,antRange, testData,SessionType.DECISION_TREE);
+			}
+
+			@Override
+			public void pushGameData(GamesData partialTestData) {
+//				partialTestData.generateArff();
+				updateGamesProgress(gameCount,gamesNumber, partialTestData.countMoves(), partialTestData.countScore(), partialTestData.countDeaths(), partialTestData.countSurvivals());
+				gameCount++;
+				if(gameCount<=gamesNumber) {
+					testData = partialTestData;
+					new Game("Game "+gameCount, this, boardSize,antRange, testData,SessionType.DECISION_TREE);
+				}
+			}
+		});
 
 
 		mainMenuPane.getChildren().add(treeTestButton);
-
-
 		main.setCenter(mainMenuPane);
+		mainMenuScene=new Scene(main,300,400);
+	}
+
+	public void showMainMenu() {
+		primaryStage.setTitle("Ant Game");
+		primaryStage.setScene(mainMenuScene);
 	}
 
 
-	public void setupTrainingGUI() {
-		training = new BorderPane();
+	public void setupGamesGUI() {
+		gamesPane = new BorderPane();
 
-		trainingData = new GridPane();
-		trainingData.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+		gamesDataGrid = new GridPane();
+		gamesDataGrid.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
 		//VBoxes containers for aesthetic
 		VBox[] vBoxes = new VBox[7];
@@ -230,71 +264,74 @@ public class Launcher extends Application {
 		gamesProgr.setTextAlignment(TextAlignment.CENTER);
 		gamesProgr.setFont(Font.font("Verdana",18));
 		vBoxes[0].getChildren().add(gamesProgr);
-		trainingData.add(vBoxes[0],0,0,3,1);
+		gamesDataGrid.add(vBoxes[0],0,0,3,1);
 		totalMoves=new Text();
 		totalMoves.setTextAlignment(TextAlignment.CENTER);
 		vBoxes[1].getChildren().add(totalMoves);
-		trainingData.add(vBoxes[1],0,1);
+		gamesDataGrid.add(vBoxes[1],0,1);
 		totalScore=new Text();
 		totalScore.setTextAlignment(TextAlignment.CENTER);
 		vBoxes[2].getChildren().add(totalScore);
-		trainingData.add(vBoxes[2],1,1);
+		gamesDataGrid.add(vBoxes[2],1,1);
 		scoreMoveRatio=new Text();
 		scoreMoveRatio.setTextAlignment(TextAlignment.CENTER);
 		vBoxes[3].getChildren().add(scoreMoveRatio);
-		trainingData.add(vBoxes[3],2,1);
+		gamesDataGrid.add(vBoxes[3],2,1);
 		deaths=new Text();
 		deaths.setTextAlignment(TextAlignment.CENTER);
 		vBoxes[4].getChildren().add(deaths);
-		trainingData.add(vBoxes[4],0,2);
+		gamesDataGrid.add(vBoxes[4],0,2);
 		survivals=new Text();
 		survivals.setTextAlignment(TextAlignment.CENTER);
 		vBoxes[5].getChildren().add(survivals);
-		trainingData.add(vBoxes[5],1,2);
+		gamesDataGrid.add(vBoxes[5],1,2);
 		survivalsDeathsRatio =new Text();
 		survivalsDeathsRatio.setTextAlignment(TextAlignment.CENTER);
 		vBoxes[6].getChildren().add(survivalsDeathsRatio);
-		trainingData.add(vBoxes[6],2,2);
+		gamesDataGrid.add(vBoxes[6],2,2);
 		pathsButton=new Button("Show Paths Map");
 		pathsButton.setMaxSize(Double.MAX_VALUE,100);
-		pathsButton.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-//				new PathsGUI(new TestData());
+		pathsButton.setOnAction(event -> new Paths(trainingData,(int)sizeSlider.getValue(),(int)rangeSlider.getValue()));
+		gamesDataGrid.add(pathsButton,0,3,3,1);
 
-			}
-		});
-		//TODO Add behaviour
-		trainingData.add(pathsButton,0,3,3,1);
+		backToMainMenuButton = new Button("Main Menu");
+		backToMainMenuButton.setMaxSize(Double.MAX_VALUE,100);
+		backToMainMenuButton.setOnAction(event ->
+				showMainMenu()
+				 );
+		gamesDataGrid.add(backToMainMenuButton,0,3,3,1);
 
 		for (int i = 0; i < 3; i++) {
 			ColumnConstraints columnConstraints = new ColumnConstraints();
 			columnConstraints.setPercentWidth((double)100/(double)3);
-			trainingData.getColumnConstraints().add(columnConstraints);
+			gamesDataGrid.getColumnConstraints().add(columnConstraints);
 		}
 
 		for (int j = 0; j < 3; j++) {
 			RowConstraints rowConstraints = new RowConstraints();
 			rowConstraints.setPercentHeight((double)100/(double)4);
-			trainingData.getRowConstraints().add(rowConstraints);
+			gamesDataGrid.getRowConstraints().add(rowConstraints);
 		}
 
-		training.setTop(trainingData);
-		BorderPane.setAlignment(trainingData, Pos.TOP_CENTER);
-		BorderPane.setMargin(trainingData,new Insets(10));
+		gamesPane.setTop(gamesDataGrid);
+		BorderPane.setAlignment(gamesDataGrid, Pos.TOP_CENTER);
+		BorderPane.setMargin(gamesDataGrid,new Insets(10));
 
-		trainingProgress = new ProgressBar(0.0);
-		trainingProgress.setMaxWidth(Double.MAX_VALUE);
-		training.setBottom(trainingProgress);
-		BorderPane.setAlignment(trainingProgress, Pos.TOP_CENTER);
-		BorderPane.setMargin(trainingProgress,new Insets(10));
+		gamesProgress = new ProgressBar(0.0);
+		gamesProgress.setMaxWidth(Double.MAX_VALUE);
+		gamesPane.setBottom(gamesProgress);
+		BorderPane.setAlignment(gamesProgress, Pos.TOP_CENTER);
+		BorderPane.setMargin(gamesProgress,new Insets(10));
+		trainingScene=new Scene(gamesPane,500,250);
+	}
 
-		trainingScene=new Scene(training,500,250);
+	public void showGamesGUI() {
 		primaryStage.setTitle("Manual Training");
 		primaryStage.setScene(trainingScene);
 	}
 
-	private void updateTrainingProgress(int gameCount,int gamesNumber,int moves,int score,int deathsNumber,int survivalsNumber) {
+
+	private void updateGamesProgress(int gameCount, int gamesNumber, int moves, int score, int deathsNumber, int survivalsNumber) {
 
 		DecimalFormat df =new DecimalFormat("#.##");
 		gamesProgr.setText("Game "+gameCount+"/"+gamesNumber);
@@ -304,7 +341,7 @@ public class Launcher extends Application {
 		deaths.setText("Deaths\n"+deathsNumber);
 		survivals.setText("Survivals\n"+survivalsNumber);
 		survivalsDeathsRatio.setText("Survs/Deaths Ratio\n"+df.format((deathsNumber==0?0:((double)survivalsNumber/(double)deathsNumber))));
-		trainingProgress.setProgress((double)gameCount/(double)gamesNumber);
+		gamesProgress.setProgress((double)gameCount/(double)gamesNumber);
 	}
 
 	public static void main(String[] args) {

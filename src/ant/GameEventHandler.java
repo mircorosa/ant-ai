@@ -1,9 +1,9 @@
 package ant;
 
-import ant.data.TestData;
+import ant.data.GamesData;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 
 public interface GameEventHandler extends EventHandler<ActionEvent> {
-	void pushGameData(TestData testData);
+	void pushGameData(GamesData gamesData);
 }

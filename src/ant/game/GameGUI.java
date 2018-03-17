@@ -1,7 +1,6 @@
 package ant.game;
 
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
+import ant.SessionType;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -107,30 +106,32 @@ public class GameGUI extends GridPane {
 		stage = new Stage();
 		stage.setTitle(game.getGameName());
 		Scene scene = new Scene(main, 670, 520);
-		scene.addEventHandler(KeyEvent.KEY_PRESSED, (key) -> {
-			if(!endGameButton.isVisible()) {
-				String direction;
-				switch (key.getCode()) {
-					case UP:
-						direction="N";
-						break;
-					case DOWN:
-						direction="S";
-						break;
-					case RIGHT:
-						direction="E";
-						break;
-					case LEFT:
-						direction="W";
-						break;
-					default:
-						direction="";
-				}
+		if(game.getSessionType().equals(SessionType.TRAINING)) {
+			scene.addEventHandler(KeyEvent.KEY_PRESSED, (key) -> {
+				if(!endGameButton.isVisible()) {
+					String direction;
+					switch (key.getCode()) {
+						case UP:
+							direction="N";
+							break;
+						case DOWN:
+							direction="S";
+							break;
+						case RIGHT:
+							direction="E";
+							break;
+						case LEFT:
+							direction="W";
+							break;
+						default:
+							direction="";
+					}
 
 //		   	System.out.println(key.getCode().getName()+" pressed ("+direction+")");
-				game.move(direction);
-			}
-		});
+					game.move(direction);
+				}
+			});
+		}
 
 		stage.setScene(scene);
 		stage.show();
@@ -198,7 +199,7 @@ public class GameGUI extends GridPane {
 		if(blindfolded && !(i>=antPosition.x()-m && i<=antPosition.x()+m && j>=antPosition.y()-m && j<=antPosition.y()+m)) cell.setStyle("-fx-border-color: gray;-fx-background-color: gray;");
 		else if (i==antPosition.x() && j==antPosition.y())    cell.setStyle("-fx-border-color: red;-fx-background-color: orange;");
 		else if (board_data[reversed?j:i][reversed?i:j]>0)   cell.setStyle("-fx-border-color: black;-fx-background-color: red;");
-		else if (i==0 || j==0 || j==board_data[0].length-1 || i==board_data.length-1)  cell.setStyle("-fx-border-color: saddlebrown;-fx-background-color: darkslategrey;");
+		else if (i<m || j<m || j>=board_data[0].length-m || i>=board_data.length-m)  cell.setStyle("-fx-border-color: saddlebrown;-fx-background-color: darkslategrey;");
 		else if (i>=antPosition.x()-m && i<=antPosition.x()+m && j>=antPosition.y()-m && j<=antPosition.y()+m && board_data[reversed?j:i][reversed?i:j]<=0)	cell.setStyle("-fx-border-color: red;-fx-background-color: yellow;");
 		else cell.setStyle("-fx-border-color: black;-fx-background-color: rgb("+
 																	(255+board_data[reversed?j:i][reversed?i:j]*(255/(board_data.length)))+","+

@@ -22,4 +22,8 @@ public class AntDataSet extends DataSet {
 	public void removeLastEntry() {
 		data.remove(data.size()-1);
 	}
+
+	public int getM() {
+		return m;
+	}
 }

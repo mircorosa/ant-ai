@@ -1,25 +1,30 @@
 package ant.data;
 
+import ant.game.Coordinates;
+import ant.game.GameBoard;
+
 import java.io.FileNotFoundException;
 
-public class TestData {
+public class GamesData {
 
-	private CompleteLog completeLog;
+	private FullLog fullLog;
 	private AntDataSet dataSet;
 	private String path, fileName;
+	private BoardsHistory history;
 
-	public TestData() {
+	public GamesData() {
 	}
 
-	public TestData(CompleteLog completeLog, AntDataSet dataSet, String path, String fileName) {
-		this.completeLog = completeLog;
+	public GamesData(FullLog fullLog, BoardsHistory history, AntDataSet dataSet, String path, String fileName) {
+		this.fullLog = fullLog;
 		this.dataSet = dataSet;
 		this.path=path;
 		this.fileName=fileName;
+		this.history = history;
 	}
 
-	public CompleteLog getCompleteLog() {
-		return completeLog;
+	public FullLog getFullLog() {
+		return fullLog;
 	}
 
 	public AntDataSet getDataSet() {
@@ -41,7 +46,7 @@ public class TestData {
 	}
 
 	public void addGameLog(GameLog gameLog) {
-		completeLog.addGameLog(gameLog);
+		fullLog.addGameLog(gameLog);
 	}
 
 	public void generateArff() {
@@ -60,14 +65,14 @@ public class TestData {
 
 	public int countMoves() {
 		int count=0;
-		for (GameLog log : completeLog.getLogs())
+		for (GameLog log : fullLog.getLogs())
 			count+=log.getMoveCount();
 		return count;
 	}
 
 	public int countScore() {
 		int totalScore=0;
-		for(GameLog log : completeLog.getLogs()) {
+		for(GameLog log : fullLog.getLogs()) {
 			for(int score : log.getScores()) {
 				if(score>0) totalScore+=score;
 			}
@@ -77,7 +82,7 @@ public class TestData {
 
 	public int countDeaths() {
 		int deaths=0;
-		for(GameLog log : completeLog.getLogs()) {
+		for(GameLog log : fullLog.getLogs()) {
 			for(int score : log.getScores()) {
 				if(score<0) deaths++;
 			}
@@ -86,6 +91,27 @@ public class TestData {
 	}
 
 	public int countSurvivals() {
-		return getCompleteLog().getLogs().size()-countDeaths();
+		return getFullLog().getLogs().size()-countDeaths();
+	}
+
+	public BoardsHistory getBoardHistory() {
+		return history;
+	}
+
+	public boolean isBoardHistoryComplete(int gameNumber) {
+		return getBoardHistory().getBoards().size() >= gameNumber ;
+	}
+
+	public void addBoardToHistory(GameBoard gameBoard) {
+		getBoardHistory().addGameBoard(gameBoard);
+	}
+
+	public void addStartingPositionToHistory(Coordinates startingPosition) {
+		getBoardHistory().addStartingPosition(startingPosition);
+	}
+
+	public void cleanDataForNewTest() {
+		fullLog = new FullLog();
+		dataSet = new AntDataSet(dataSet.getName(),dataSet.getM());
 	}
 }

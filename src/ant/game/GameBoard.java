@@ -23,6 +23,16 @@ public class GameBoard {
 		initializeBoard();
 	}
 
+	public GameBoard(GameBoard gameBoard) {
+		this.N = gameBoard.getN();
+		this.m = gameBoard.getM();
+		this.defaultValue = gameBoard.getDefaultValue();
+		this.foodValue = gameBoard.getFoodValue();
+		this.outOfBoundValue = gameBoard.getOutOfBoundValue();
+		this.totalFood = gameBoard.getTotalFood();
+		this.board = gameBoard.getBoardCopy();
+	}
+
 	private void initializeBoard() {
 		//Default values + bounds
 		for (int i = 0; i < board.length; i++)
@@ -125,5 +135,41 @@ public class GameBoard {
 
 	int[][] getBoard() {
 		return board;
+	}
+
+	int[][] getBoardCopy() {
+		int[][] copy = new int[board.length][board[0].length];
+
+		for (int i = 0; i < board.length; i++) {
+			for (int j = 0; j < board[i].length; j++) {
+				copy[i][j] = board[i][j];
+			}
+		}
+
+		return copy;
+	}
+
+	public int getN() {
+		return N;
+	}
+
+	public int getM() {
+		return m;
+	}
+
+	public int getDefaultValue() {
+		return defaultValue;
+	}
+
+	public int getFoodValue() {
+		return foodValue;
+	}
+
+	public int getOutOfBoundValue() {
+		return outOfBoundValue;
+	}
+
+	public int getTotalFood() {
+		return totalFood;
 	}
 }
