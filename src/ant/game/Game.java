@@ -5,6 +5,8 @@ import ant.SessionType;
 import ant.data.AntDataSet;
 import ant.data.GameLog;
 import ant.data.GamesData;
+import weka.classifiers.AbstractClassifier;
+import weka.classifiers.functions.MultilayerPerceptron;
 import weka.classifiers.trees.J48;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils;
@@ -29,6 +31,7 @@ public class Game {
 	private SessionType sessionType;
 
 	private Timer testTimer;
+	private AbstractClassifier classifier;
 
 	private GamesData gamesData;
 
@@ -49,10 +52,11 @@ public class Game {
 	 Going out of bound = death
 	 Max n° of moves: 2N
 	*/
-	public Game(String name, GameEventHandler eventHandler, int N, int m, GamesData gamesData, SessionType sessionType) {
+	public Game(String name, GameEventHandler eventHandler, int N, int m, GamesData gamesData, SessionType sessionType, AbstractClassifier classifier) {
 		this(name,N,m,1,2*N,-1, gamesData,eventHandler, sessionType);
+		this.classifier = classifier;
 		int gameNumber = Integer.valueOf(name.substring(name.length()-1));
-		if(sessionType.equals(SessionType.DECISION_TREE) && !gamesData.isBoardHistoryComplete(gameNumber)) {
+		if(sessionType.equals(SessionType.TRAINING) || !gamesData.isBoardHistoryComplete(gameNumber)) {
 			setupGameBoard(0,1,-(N+2),N);
 			gamesData.addBoardToHistory(gameBoard);
 			setupAntRandomSP();
@@ -64,10 +68,11 @@ public class Game {
 		startGame();
 	}
 
-	public Game(String name, GameEventHandler eventHandler, GamesData gamesData, SessionType sessionType) {
+	public Game(String name, GameEventHandler eventHandler, GamesData gamesData, SessionType sessionType, AbstractClassifier classifier) {
 		this(name,10,2,1,2*10,-1, gamesData,eventHandler, sessionType);
+		this.classifier = classifier;
 		int gameNumber = Integer.valueOf(name.substring(name.length()-1));
-		if(sessionType.equals(SessionType.DECISION_TREE) && !gamesData.isBoardHistoryComplete(gameNumber)) {
+		if(sessionType.equals(SessionType.TRAINING) || !gamesData.isBoardHistoryComplete(gameNumber)) {
 			setupGameBoard(0,1,-(N+2),N);
 			gamesData.addBoardToHistory(gameBoard);
 			setupAntRandomSP();
@@ -141,12 +146,17 @@ public class Game {
 				break;
 			case DECISION_TREE:
 				try {
-					runDecisionTreeTest(getTrainedDecisionTree());
+					runTest(classifier);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 				break;
 			case NEURAL_NETWORK:
+				try {
+					runTest(classifier);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 				break;
 			case GENETIC_ALGORITHMS:
 				break;
@@ -166,25 +176,7 @@ public class Game {
 	// Game Logic
 	//
 
-	private J48 getTrainedDecisionTree() throws Exception{
-		//Loading .arff
-		ConverterUtils.DataSource source = new ConverterUtils.DataSource("/home/mirco/Desktop/AntTrain.arff");
-		Instances data = source.getDataSet();
-		// setting class attribute if the data format does not provide this information
-		// For example, the XRFF format saves the class attribute information as well
-		if (data.classIndex() == -1)
-			data.setClassIndex(data.numAttributes() - 1);
-
-
-		String[] options = weka.core.Utils.splitOptions("-C 0.25 -M 2");
-		J48 tree = new J48();         // new instance of tree
-		tree.setOptions(options);     // set the options
-		tree.buildClassifier(data);   // build classifier
-
-		return tree;
-	}
-
-	private void runDecisionTreeTest(J48 tree) {
+	private void runTest(AbstractClassifier tree) {
 		TimerTask task = new TimerTask() {
 			@Override
 			public void run() {
@@ -252,7 +244,7 @@ public class Game {
 			gameLog.addMoveAndScore(direction,moveScore);
 			if(moves>=maxMoves) { //Game finished, moves limit reached
 				System.out.println("NO MORE MOVES");
-				if(sessionType.equals(SessionType.DECISION_TREE))
+				if(!sessionType.equals(SessionType.TRAINING))
 					testTimer.cancel();
 				GUI.endGame();
 			}
@@ -261,7 +253,7 @@ public class Game {
 			gameLog.addMoveAndScore(direction,moveScore);
 			if(sessionType.equals(SessionType.TRAINING))
 				gamesData.removeLastDataSetEntries(4);  //We do not want deadly moves in our DataSet
-			if(sessionType.equals(SessionType.DECISION_TREE))
+			else
 				testTimer.cancel();
 			GUI.endGame();
 		}
@@ -307,5 +299,9 @@ public class Game {
 
 	public SessionType getSessionType() {
 		return sessionType;
+	}
+
+	public String getScore() {
+		return String.valueOf(ant.getScore());
 	}
 }

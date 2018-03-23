@@ -28,6 +28,8 @@ public class GameGUI extends GridPane {
 	private Text title;
 	private Separator separator1;
 	private Text movesRemaining;
+	private Separator separator5;
+	private Text score;
 	private Separator separator2;
 	private Text antStatus;
 	private Separator separator3;
@@ -70,6 +72,13 @@ public class GameGUI extends GridPane {
 		movesRemaining = new Text("Moves\n"+game.getMoves()+"/"+game.getMaxMoves());
 		movesRemaining.setTextAlignment(TextAlignment.CENTER);
 		statusBar.getChildren().add(movesRemaining);
+
+		separator5=new Separator(Orientation.HORIZONTAL);
+		statusBar.getChildren().add(separator5);
+
+		score = new Text("Score\n"+game.getScore());
+		score.setTextAlignment(TextAlignment.CENTER);
+		statusBar.getChildren().add(score);
 
 		separator2=new Separator(Orientation.HORIZONTAL);
 		statusBar.getChildren().add(separator2);
@@ -191,6 +200,7 @@ public class GameGUI extends GridPane {
 		//Scoreboard update
 		movesRemaining.setText("Moves\n"+game.getMoves()+"/"+game.getMaxMoves());
 		antStatus.setText("Status\n"+game.getAntStatus());
+		score.setText("Score\n"+game.getScore());
 
 	}
 

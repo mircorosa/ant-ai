@@ -11,6 +11,7 @@ import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.geometry.VPos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ProgressBar;
@@ -22,6 +23,11 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
+import weka.classifiers.AbstractClassifier;
+import weka.classifiers.functions.MultilayerPerceptron;
+import weka.classifiers.trees.J48;
+import weka.core.Instances;
+import weka.core.converters.ConverterUtils;
 
 import java.text.DecimalFormat;
 
@@ -46,8 +52,9 @@ public class Launcher extends Application {
 
 	private Separator separator4;
 	private Button treeTestButton;
+	private Button mlPerceptronTestButton;
 
-	private Scene trainingScene;
+	private Scene gamesScene;
 	private BorderPane gamesPane;
 	private GridPane gamesDataGrid;
 	private Text gamesProgr;      //Large on top
@@ -58,6 +65,7 @@ public class Launcher extends Application {
 	private Text survivals;
 	private Text survivalsDeathsRatio;
 	private Button pathsButton;   //Last full row
+	private Separator separator5;
 	private Button backToMainMenuButton;
 
 
@@ -85,6 +93,7 @@ public class Launcher extends Application {
 		trainingButton = new Button("Start Training");
 		separator4 = new Separator();
 		treeTestButton = new Button("Start Decision Tree Test");
+		mlPerceptronTestButton = new Button("Start Multilayer Perceptron Test");
 	}
 
 	@Override
@@ -172,13 +181,16 @@ public class Launcher extends Application {
 			@Override
 			public void handle(ActionEvent event) {
 				//Fires 1st game
+				gameCount = 1;
 				boardSize=(int)sizeSlider.getValue();
 				antRange=(int)rangeSlider.getValue();
 				gamesNumber=(int)gameNumberSlider.getValue();
 				trainingData = new GamesData(new FullLog(), new BoardsHistory(),new AntDataSet(DATA_SET_NAME,antRange),PATH,FILE_NAME);
-				setupGamesGUI();
+				if(gamesPane==null)
+					setupGamesGUI();
 				updateGamesProgress(0,gamesNumber,0,0,0,0);
-				new Game("Game "+gameCount, this, boardSize,antRange, trainingData,SessionType.TRAINING);
+				showGamesGUI(true);
+				new Game("Game "+gameCount, this, boardSize,antRange, trainingData,SessionType.TRAINING,null);
 			}
 
 			@Override
@@ -188,7 +200,7 @@ public class Launcher extends Application {
 				gameCount++;
 				if(gameCount<=gamesNumber) {
 					trainingData = partialTrainingData;
-					new Game("Game "+gameCount, this, boardSize,antRange, partialTrainingData,SessionType.TRAINING);
+					new Game("Game "+gameCount, this, boardSize,antRange, partialTrainingData,SessionType.TRAINING,null);
 				}
 			}
 		});
@@ -203,6 +215,8 @@ public class Launcher extends Application {
 		treeTestButton.setOnAction(new GameEventHandler() {
 			int gameCount;
 			int boardSize, antRange, gamesNumber;
+			AbstractClassifier classifier;
+
 
 			@Override
 			public void handle(ActionEvent event) {
@@ -211,14 +225,19 @@ public class Launcher extends Application {
 				boardSize=(int)sizeSlider.getValue();
 				antRange=(int)rangeSlider.getValue();
 				gamesNumber=(int)gameNumberSlider.getValue();
+				try {
+					classifier = getTrainedDecisionTree();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 				if(testData==null)
 					testData = new GamesData(new FullLog(),new BoardsHistory(),new AntDataSet(DATA_SET_NAME,antRange),PATH,FILE_NAME);
 				testData.cleanDataForNewTest();
 				if(gamesPane==null)
 					setupGamesGUI();
 				updateGamesProgress(0,gamesNumber,0,0,0,0);
-				showGamesGUI();
-				new Game("Game "+gameCount, this, boardSize,antRange, testData,SessionType.DECISION_TREE);
+				showGamesGUI(false);
+				new Game("Game "+gameCount, this, boardSize,antRange, testData,SessionType.DECISION_TREE,classifier);
 			}
 
 			@Override
@@ -228,15 +247,56 @@ public class Launcher extends Application {
 				gameCount++;
 				if(gameCount<=gamesNumber) {
 					testData = partialTestData;
-					new Game("Game "+gameCount, this, boardSize,antRange, testData,SessionType.DECISION_TREE);
+					new Game("Game "+gameCount, this, boardSize,antRange, testData,SessionType.DECISION_TREE,classifier);
 				}
 			}
 		});
-
-
 		mainMenuPane.getChildren().add(treeTestButton);
+
+		mlPerceptronTestButton.setAlignment(Pos.CENTER);
+		mlPerceptronTestButton.setMaxSize(Double.MAX_VALUE,100);
+		mlPerceptronTestButton.setOnAction(new GameEventHandler() {
+			int gameCount;
+			int boardSize, antRange, gamesNumber;
+			AbstractClassifier classifier;
+
+			@Override
+			public void handle(ActionEvent event) {
+				//Fires 1st game
+				gameCount = 1;
+				boardSize=(int)sizeSlider.getValue();
+				antRange=(int)rangeSlider.getValue();
+				gamesNumber=(int)gameNumberSlider.getValue();
+				try {
+					classifier = getTrainedMultilayerPerceptron();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				if(testData==null)
+					testData = new GamesData(new FullLog(),new BoardsHistory(),new AntDataSet(DATA_SET_NAME,antRange),PATH,FILE_NAME);
+				testData.cleanDataForNewTest();
+				if(gamesPane==null)
+					setupGamesGUI();
+				updateGamesProgress(0,gamesNumber,0,0,0,0);
+				showGamesGUI(false);
+				new Game("Game "+gameCount, this, boardSize,antRange, testData,SessionType.NEURAL_NETWORK,classifier);
+			}
+
+			@Override
+			public void pushGameData(GamesData partialTestData) {
+//				partialTestData.generateArff();
+				updateGamesProgress(gameCount,gamesNumber, partialTestData.countMoves(), partialTestData.countScore(), partialTestData.countDeaths(), partialTestData.countSurvivals());
+				gameCount++;
+				if(gameCount<=gamesNumber) {
+					testData = partialTestData;
+					new Game("Game "+gameCount, this, boardSize,antRange, testData,SessionType.NEURAL_NETWORK,classifier);
+				}
+			}
+		});
+		mainMenuPane.getChildren().add(mlPerceptronTestButton);
+
 		main.setCenter(mainMenuPane);
-		mainMenuScene=new Scene(main,300,400);
+		mainMenuScene=new Scene(main,300,430);
 	}
 
 	public void showMainMenu() {
@@ -291,15 +351,19 @@ public class Launcher extends Application {
 		gamesDataGrid.add(vBoxes[6],2,2);
 		pathsButton=new Button("Show Paths Map");
 		pathsButton.setMaxSize(Double.MAX_VALUE,100);
-		pathsButton.setOnAction(event -> new Paths(trainingData,(int)sizeSlider.getValue(),(int)rangeSlider.getValue()));
 		gamesDataGrid.add(pathsButton,0,3,3,1);
+		separator5 = new Separator(Orientation.HORIZONTAL);
+		separator5.setValignment(VPos.CENTER);
+		separator5.setMinHeight(10);
+		gamesDataGrid.add(separator5,0,4,3,1);
+
 
 		backToMainMenuButton = new Button("Main Menu");
 		backToMainMenuButton.setMaxSize(Double.MAX_VALUE,100);
 		backToMainMenuButton.setOnAction(event ->
 				showMainMenu()
 				 );
-		gamesDataGrid.add(backToMainMenuButton,0,3,3,1);
+		gamesDataGrid.add(backToMainMenuButton,0,5,3,1);
 
 		for (int i = 0; i < 3; i++) {
 			ColumnConstraints columnConstraints = new ColumnConstraints();
@@ -322,13 +386,50 @@ public class Launcher extends Application {
 		gamesPane.setBottom(gamesProgress);
 		BorderPane.setAlignment(gamesProgress, Pos.TOP_CENTER);
 		BorderPane.setMargin(gamesProgress,new Insets(10));
-		trainingScene=new Scene(gamesPane,500,250);
+		gamesScene =new Scene(gamesPane,500,300);
 	}
 
-	public void showGamesGUI() {
-		primaryStage.setTitle("Manual Training");
-		primaryStage.setScene(trainingScene);
+	public void showGamesGUI(boolean training) {
+		pathsButton.setOnAction(event -> new Paths(training ? trainingData : testData,(int)sizeSlider.getValue(),(int)rangeSlider.getValue()));
+		primaryStage.setTitle("Games Stats");
+		primaryStage.setScene(gamesScene);
 	}
+
+	private J48 getTrainedDecisionTree() throws Exception{
+		//Loading .arff
+		ConverterUtils.DataSource source = new ConverterUtils.DataSource("/home/mirco/Desktop/AntTrain.arff");
+		Instances data = source.getDataSet();
+		// setting class attribute if the data format does not provide this information
+		// For example, the XRFF format saves the class attribute information as well
+		if (data.classIndex() == -1)
+			data.setClassIndex(data.numAttributes() - 1);
+
+
+		String[] options = weka.core.Utils.splitOptions("-C 0.25 -M 2");
+		J48 tree = new J48();         // new instance of tree
+		tree.setOptions(options);     // set the options
+		tree.buildClassifier(data);   // build classifier
+
+		return tree;
+	}
+
+	private MultilayerPerceptron getTrainedMultilayerPerceptron() throws Exception {
+		//Loading .arff
+		ConverterUtils.DataSource source = new ConverterUtils.DataSource("/home/mirco/Desktop/AntTrain.arff");
+		Instances data = source.getDataSet();
+		// setting class attribute if the data format does not provide this information
+		// For example, the XRFF format saves the class attribute information as well
+		if (data.classIndex() == -1)
+			data.setClassIndex(data.numAttributes() - 1);
+
+		String[] options = weka.core.Utils.splitOptions("-L 0.3 -M 0.2 -N 500 -V 0 -S 0 -E 20 -H a");
+		MultilayerPerceptron mlPerceptron = new MultilayerPerceptron();         // new instance of mlPerceptron
+		mlPerceptron.setOptions(options);     // set the options
+		mlPerceptron.buildClassifier(data);   // build classifier
+
+		return mlPerceptron;
+	}
+
 
 
 	private void updateGamesProgress(int gameCount, int gamesNumber, int moves, int score, int deathsNumber, int survivalsNumber) {
