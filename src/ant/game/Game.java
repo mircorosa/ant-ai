@@ -235,7 +235,6 @@ public class Game {
 		}
 
 		int moveScore = ant.updateScore(gameBoard.getCellPoints(ant.getPosition()));
-
 		moves++;
 		GUI.updateUI();
 
