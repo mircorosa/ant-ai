@@ -72,7 +72,6 @@ public abstract class DataSet {
 		arff.close();
 	}
 
-	//TODO Add to Arff Generator project
 	public String printToString() {
 		StringBuilder arff = new StringBuilder();
 
